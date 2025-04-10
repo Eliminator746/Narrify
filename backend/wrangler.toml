@@ -1,6 +1,6 @@
-"name": "backend",
-"main": "src/index.ts",
-"compatibility_date": "2025-04-08"
+name = "backend"
+main = "src/index.ts"
+compatibility_date = "2025-04-05"  # Compatibility with your current Cloudflare Workers runtime
 node_compat = true
 
 [vars]

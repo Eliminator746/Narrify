@@ -2,11 +2,12 @@ import { Hono } from "hono";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { sign } from 'hono/jwt'
+import { signupInput, signinInput } from '@anish_kumar113/narrify-common'
 
 const userRouter = new Hono<{
     Bindings: {
         DATABASE_URL: string,
-        JWT_SECRET : string,
+        JWT_SECRET: string,
     };
 }>();
 
@@ -15,7 +16,7 @@ const userRouter = new Hono<{
 userRouter.post("/signup", async (c) => {
 
     const prisma = new PrismaClient({
-        datasourceUrl: c.env.DATABASE_URL, 
+        datasourceUrl: c.env.DATABASE_URL,
         //Here c.env was giving error due to typescript so we have to specify in typescript that DATABASE_URL is string.
     }).$extends(withAccelerate());
 
@@ -26,21 +27,27 @@ userRouter.post("/signup", async (c) => {
         and we have to do it everytime using c as at each endpoint which may be deployed at some random place independently, have to access the env variables for them, and gloal one do not work. So you have to do it everytime at each points.
 
     */
-    const { email, password, name } = await c.req.json();
+    const body = await c.req.json();
+    const { email, password, name }=body
+    
+    const { success } = signupInput.safeParse(body);
 
-    if (!email || !password || !name) {
-        return c.json({ error: 'Missing required fields' }, 400);
+    if (!success) {
+        c.status(411);
+        return c.json({
+            message: "Incorrect Inputs",
+        })
     }
 
-    const doesUserExists= await prisma.user.findUnique({
-        where:{
+    const doesUserExists = await prisma.user.findUnique({
+        where: {
             email,
         }
     })
-    
-    if (doesUserExists) 
+
+    if (doesUserExists)
         return c.json({ error: 'User already exists' }, 403);
-    
+
 
     const user = await prisma.user.create({
         data: {
@@ -55,34 +62,34 @@ userRouter.post("/signup", async (c) => {
 
 });
 
-userRouter.post("/signin", async(c) => {
+userRouter.post("/signin", async (c) => {
 
     const prisma = new PrismaClient({
-        datasourceUrl: c.env.DATABASE_URL, 
+        datasourceUrl: c.env.DATABASE_URL,
     }).$extends(withAccelerate());
 
-    const { email, password }= await c.req.json()
+    const { email, password } = await c.req.json()
 
     if (!email || !password) {
         return c.json({ error: 'Missing required fields' }, 400);
     }
 
-    const validUser= await prisma.user.findUnique({
-        where:{
+    const validUser = await prisma.user.findUnique({
+        where: {
             email
         }
     })
 
-    if(!validUser)
+    if (!validUser)
         return c.json({ error: 'User already exists' }, 403);
 
-    const payload = {id:validUser.id}
+    const payload = { id: validUser.id }
     const secret = c.env.JWT_SECRET
     const token = await sign(payload, secret)
 
     return c.json({ email, token });
 
- });
+});
 
 export { userRouter };
 

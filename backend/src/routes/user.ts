@@ -29,7 +29,7 @@ userRouter.post("/signup", async (c) => {
     */
     const body = await c.req.json();
     const { email, password, name }=body
-    
+
     const { success } = signupInput.safeParse(body);
 
     if (!success) {
@@ -68,10 +68,16 @@ userRouter.post("/signin", async (c) => {
         datasourceUrl: c.env.DATABASE_URL,
     }).$extends(withAccelerate());
 
-    const { email, password } = await c.req.json()
+    const body = await c.req.json()
+    const { email, password } = body
 
-    if (!email || !password) {
-        return c.json({ error: 'Missing required fields' }, 400);
+    const { success }= signinInput.safeParse(body)
+
+    if (!success) {
+        c.status(411);
+        return c.json({
+            message: "Incorrect Inputs",
+        })
     }
 
     const validUser = await prisma.user.findUnique({

@@ -57,8 +57,11 @@ userRouter.post("/signup", async (c) => {
         },
     });
 
+    const payload = { id: user.id }
+    const secret = c.env.JWT_SECRET
+    const token = await sign(payload, secret)
 
-    return c.json({ email, name });
+    return c.json({ email, name, token });
 
 });
 
